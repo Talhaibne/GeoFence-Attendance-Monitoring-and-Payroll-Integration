@@ -1,0 +1,606 @@
+{
+  "name": "My workflow 4",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        -300
+      ],
+      "id": "c3336b61-c8ce-4cef-ac53-ae22432c774f",
+      "name": "Checkin",
+      "webhookId": "d12aee9c-6ea8-4647-b191-91c24c56032f",
+      "credentials": {
+        "telegramApi": {
+          "id": "vnbtGx2gZZjZ3yXw",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c9243515-7d65-44be-b5f4-8a989bfba5fa",
+              "leftValue": "={{$json[\"message\"][\"text\"]}}",
+              "rightValue": "/checkin",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        260,
+        -340
+      ],
+      "id": "1f4bf2f1-badb-4cae-a97c-68992fc52831",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json[\"message\"][\"chat\"][\"id\"]}}",
+        "text": "\"Please press the button below to share your location.\"",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "📍 Share Location ",
+                    "additionalFields": {
+                      "request_location": true
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": true
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        500,
+        -420
+      ],
+      "id": "d9164a93-02fe-479e-9eb6-6403f158324d",
+      "name": "Location",
+      "webhookId": "6e5ec299-7861-440e-a6cc-edb0a3095f53",
+      "credentials": {
+        "telegramApi": {
+          "id": "vnbtGx2gZZjZ3yXw",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2535ef61-eda1-4f90-b4e7-ce4bef58ae96",
+              "leftValue": "={{$json[\"message\"][\"location\"][\"latitude\"]}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        460,
+        20
+      ],
+      "id": "d94efb39-33c3-4bc0-ab2a-00c44bda54f7",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const userLat = $json.latitude;\nconst userLon = $json.longitude;\n\nconst officeLat = 23.7968910;  // your office lat\nconst officeLon = 90.425970;  // your office lon\nconst radiusMeters = 100;   // allowed radius in meters\n\nfunction getDistance(lat1, lon1, lat2, lon2) {\n  const R = 6371000;\n  const dLat = (lat2 - lat1) * Math.PI / 180;\n  const dLon = (lon2 - lon1) * Math.PI / 180;\n  const a =\n    Math.sin(dLat / 2) ** 2 +\n    Math.cos(lat1 * Math.PI / 180) *\n    Math.cos(lat2 * Math.PI / 180) *\n    Math.sin(dLon / 2) ** 2;\n  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));\n  return R * c;\n}\n\nconst distance = getDistance(userLat, userLon, officeLat, officeLon);\nconst insideGeofence = distance <= radiusMeters;\n\nreturn [{ json: { userLat, userLon, distance, insideGeofence } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        -100
+      ],
+      "id": "9fa6b25b-7722-4b25-92db-d60189832d33",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.user_id}}",
+        "text": "❌ You are outside the allowed check-in area.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        0
+      ],
+      "id": "0d5ed898-5121-4810-ad00-e4b55756f423",
+      "name": "Outside Geofence",
+      "webhookId": "c1f294fd-8f60-4453-ab61-f73a55e8c018",
+      "credentials": {
+        "telegramApi": {
+          "id": "vnbtGx2gZZjZ3yXw",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.user_id}}",
+        "text": "✅ Check-in successful!",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        -340
+      ],
+      "id": "49f92ec1-ff88-4c1f-80cb-5f4cd4e11d9e",
+      "name": "Checkin Notification",
+      "webhookId": "778f22ef-c553-469e-8d6d-f72c9c3f7e37",
+      "credentials": {
+        "telegramApi": {
+          "id": "vnbtGx2gZZjZ3yXw",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1-C-ZOGfUpJ_08lg22LSZPYK9LEgTwx_uzCJ8jXXSrBI",
+          "mode": "list",
+          "cachedResultName": "Trails",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1-C-ZOGfUpJ_08lg22LSZPYK9LEgTwx_uzCJ8jXXSrBI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 104866101,
+          "mode": "list",
+          "cachedResultName": "Attendance",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1-C-ZOGfUpJ_08lg22LSZPYK9LEgTwx_uzCJ8jXXSrBI/edit#gid=104866101"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+            "timestamp": "={{ $('Set Node').item.json.timestamp }}",
+            "latitude": "={{$json.userLat}}",
+            "longitude": "={{$json.userLon}}",
+            "Status": "Present",
+            "name": "={{ $('Telegram Trigger').item.json.message.from.first_name }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "latitude",
+              "displayName": "latitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "longitude",
+              "displayName": "longitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1340,
+        -340
+      ],
+      "id": "6176a9b9-2957-437c-9f13-6b71ea164e72",
+      "name": "Attendance",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DkSqj13d58wb9Wyf",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4a4a1703-918e-420d-b35c-dd1f816f9efd",
+              "leftValue": "={{$json.insideGeofence}}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1140,
+        -100
+      ],
+      "id": "2298f0ac-3a6c-4b50-a85f-a3bb32545907",
+      "name": "Check If within Geofence"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c15c3e0f-67db-4e89-82ef-3101773a341f",
+              "name": "user_id",
+              "value": "={{$json[\"message\"][\"from\"][\"id\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "563f0482-b829-40a3-a4c2-03af3c097459",
+              "name": "username",
+              "value": "={{$json[\"message\"][\"from\"][\"username\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "b066b9e6-d290-4518-8f3b-1ed2ac9f389d",
+              "name": "latitude",
+              "value": "={{$json[\"message\"][\"location\"][\"latitude\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "b90d3256-ad63-499b-99b3-cd7e21342de5",
+              "name": "longitude",
+              "value": "={{$json[\"message\"][\"location\"][\"longitude\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "35b888af-be8b-411d-9417-5bc9c0764107",
+              "name": "timestamp",
+              "value": "={{$json[\"message\"][\"date\"] * 1000}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        700,
+        -100
+      ],
+      "id": "ce1d503e-e3c9-481a-b9cd-358c4a8cef01",
+      "name": "Set Node"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        280,
+        -600
+      ],
+      "id": "d1d80e07-6a1a-4b87-8a7c-6a30663a8317",
+      "name": "Telegram Trigger",
+      "webhookId": "980edae7-8369-4462-a162-b2e13aa80d58",
+      "credentials": {
+        "telegramApi": {
+          "id": "vnbtGx2gZZjZ3yXw",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e1b3888a-decc-4dbe-980a-7fa5db0c3de5",
+              "leftValue": "={{$json[\"message\"][\"location\"][\"latitude\"]}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        -600
+      ],
+      "id": "0f2f660c-80a4-4fba-bb17-46e7e424a7b3",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\n// Extract data\nconst timestamp = item.message.date;\nconst date = new Date(timestamp * 1000).toISOString(); // Convert to ISO string\nconst userId = item.message.from.id;\nconst location = item.message.location;\n\n// Return result\nreturn [\n  {\n    json: {\n      userId,\n      date,\n      latitude: location?.latitude || null,\n      longitude: location?.longitude || null\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -300
+      ],
+      "id": "574c7b93-3a92-4a53-9af0-5986a9ec6a46",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Checkin": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Location",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Location": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Set Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Check If within Geofence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attendance": {
+      "main": [
+        [
+          {
+            "node": "Checkin Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If within Geofence": {
+      "main": [
+        [
+          {
+            "node": "Attendance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Outside Geofence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Node": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Set Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "924c9c2c-ea46-4fe7-bb5f-1b40ab207912",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ca405866e2528c14db3824b169f19a9a19f8bdad4c6665d9aa4c5cf7595bd664"
+  },
+  "id": "g8FMPB4huKxCqGk4",
+  "tags": []
+}
